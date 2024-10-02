@@ -13,6 +13,14 @@ import (
 
 var DB *gorm.DB
 
+// Book model
+type Book struct {
+	gorm.Model
+	Title       string `json:"title"`
+	Author      string `json:"author"`
+	Description string `json:"description"`
+}
+
 // InitializeDatabase sets up the connection to the database using Gorm
 func InitializeDatabase() {
 	// Load environment variables for DB connection
@@ -33,16 +41,100 @@ func InitializeDatabase() {
 		log.Fatal("Failed to connect to the database: ", err)
 	}
 
-	fmt.Println("Database connection successfully opened")
+	// Migrate the schema (create table if it doesn't exist)
+	DB.AutoMigrate(&Book{}) // Migrate the Book model
+
+	fmt.Println("Database connection successfully opened and Book table migrated")
 }
 
+// GetAllBooks retrieves all books from the database
+func GetAllBooks(c *fiber.Ctx) error {
+	var books []Book
+	if result := DB.Find(&books); result.Error != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"error": "Failed to retrieve books",
+		})
+	}
+	return c.JSON(books)
+}
+
+// GetBookByID retrieves a specific book by ID
+func GetBookByID(c *fiber.Ctx) error {
+	id := c.Params("id")
+	var book Book
+	if result := DB.First(&book, id); result.Error != nil {
+		return c.Status(404).JSON(fiber.Map{
+			"error": "Book not found",
+		})
+	}
+	return c.JSON(book)
+}
+
+// CreateBook creates a new book
+func CreateBook(c *fiber.Ctx) error {
+	book := new(Book)
+	if err := c.BodyParser(book); err != nil {
+		return c.Status(400).JSON(fiber.Map{
+			"error": "Failed to parse request body",
+		})
+	}
+	if result := DB.Create(book); result.Error != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"error": "Failed to create book",
+		})
+	}
+	return c.JSON(book)
+}
+
+// UpdateBook updates an existing book by ID
+func UpdateBook(c *fiber.Ctx) error {
+	id := c.Params("id")
+	var book Book
+	if result := DB.First(&book, id); result.Error != nil {
+		return c.Status(404).JSON(fiber.Map{
+			"error": "Book not found",
+		})
+	}
+
+	if err := c.BodyParser(&book); err != nil {
+		return c.Status(400).JSON(fiber.Map{
+			"error": "Failed to parse request body",
+		})
+	}
+
+	if result := DB.Save(&book); result.Error != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"error": "Failed to update book",
+		})
+	}
+	return c.JSON(book)
+}
+
+// DeleteBook deletes a book by ID
+func DeleteBook(c *fiber.Ctx) error {
+	id := c.Params("id")
+	var book Book
+	if result := DB.First(&book, id); result.Error != nil {
+		return c.Status(404).JSON(fiber.Map{
+			"error": "Book not found",
+		})
+	}
+
+	if result := DB.Delete(&book); result.Error != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"error": "Failed to delete book",
+		})
+	}
+	return c.SendStatus(fiber.StatusNoContent)
+}
+
+// SetupRoutes configures the routes for the Fiber app
 func SetupRoutes(app *fiber.App) {
-	// Book CRUD routes
-	app.Get("/books", GetAllBooks)       // Read all books
-	app.Get("/books/:id", GetBookByID)   // Read a single book by ID
-	app.Post("/books", CreateBook)       // Create a new book
-	app.Put("/books/:id", UpdateBook)    // Update a book by ID
-	app.Delete("/books/:id", DeleteBook) // Delete a book by ID
+	app.Get("/books", GetAllBooks)
+	app.Get("/books/:id", GetBookByID)
+	app.Post("/books", CreateBook)
+	app.Put("/books/:id", UpdateBook)
+	app.Delete("/books/:id", DeleteBook)
 }
 
 func main() {
