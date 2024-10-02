@@ -1,0 +1,50 @@
+# Binaries for programs and plugins
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+
+# Go related
+*.out
+*.log
+
+# Vendor directories (for Go modules)
+vendor/
+
+# Dependency directories and Go module files
+/go
+go.sum
+go.mod
+
+# .env file containing environment variables (important to avoid committing sensitive data)
+.env
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+
+# macOS specific files
+.DS_Store
+
+# Docker specific files
+**/docker-compose.override.yml
+**/Dockerfile
+
+# Database related files (if using SQLite or similar)
+*.db
+*.sqlite3
+
+# Logs
+logs/
+*.log
+
+# Coverage reports
+*.cover
+*.cov
+
+# Node.js files (in case there's a frontend directory or a Node-based utility)
+node_modules/
+package-lock.json
+yarn.lock
